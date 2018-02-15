@@ -23,7 +23,9 @@ function speedTest(){
     iframe.setAttribute('height', '1');
     iframe.setAttribute('style', 'display:none;');
     iframe.setAttribute('allowTransparency', 'true');
-    iframe.setAttribute('src', url + '&iframe=true');
+
+    var qString = (url.indexOf('?') > 0) ? '&iframe=true' : '?iframe=true';
+    iframe.setAttribute('src', url + qString);
 
     document.getElementsByTagName('body')[0].appendChild(iframe);
     startTime = parseInt(time());
