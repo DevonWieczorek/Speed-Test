@@ -1,78 +1,95 @@
-var loadTime = 0; // Child
-var startTime = 0; // Parent
-var url = window.location.href;
+// Try to replicate CSS's '@import' functionality for front-end JS
+// Similar to ES6's experimental 'import' feature
+// @src - string, source of the script to 'include'
+// @callback - function, callback to be executed after the script is loaded
+// @options - JSON object
+//          - @before - string, source of script to 'include' before
+//          - @after - string, source of script to 'include' after
+//          - @replace - string, script source or regex of source to replace with our new script
+//          - @async - boolean, whether or not our new script should be async
+// The include function only accepts before, after, or replace
+// If multiple are present, the first one takes precedence
+// Extend implementation found on https://jsfiddle.net/1vrkw1pc/
 
-document.addEventListener("DOMContentLoaded", function() {
-    // If iFrame, execute child code
-    if(urlParam('iframe') == 'true'){
-        loadTime = time();
-        parent.postMessage({timeLoaded: loadTime}, "*");
+function include(src, callback, options){
+    function appendHead(s){
+        document.getElementsByTagName('head')[0].appendChild(s);
     }
-    // Otherwise execute parent code
-    else{
-        speedTest();
+    
+    function replaceScript(target, replacement){
+        var scripts = document.getElementsByTagName("script");
+        for(var i = 0; i < scripts.length; i++) {
+            if (scripts[i].src.match(target)) {
+                // First add the new script after the target
+                var parent = scripts[i].parentNode;
+                console.log(parent.nodeType);
+                parent.insertBefore(replacement, scripts[i].nextSibling);
+                
+                // Then remove the script to be 'replaced'
+                parent.removeChild(scripts[i]);
+                break;
+            }
+        }
     }
-
-});
-
-function speedTest(){
-    if(!window.postMessage){ return false; }
-
-    var iframe = document.createElement('iframe');
-    iframe.setAttribute('width', '1');
-    iframe.setAttribute('height', '1');
-    iframe.setAttribute('style', 'display:none;');
-    iframe.setAttribute('allowTransparency', 'true');
-
-    var qString = (url.indexOf('?') > 0) ? '&iframe=true' : '?iframe=true';
-    iframe.setAttribute('src', url + qString);
-
-    document.getElementsByTagName('body')[0].appendChild(iframe);
-    startTime = parseInt(time());
-    console.log('Time Triggered: ' + startTime);
-
-
-    // Create IE + others compatible event handler
-    var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
-    var eventer = window[eventMethod];
-    var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
-
-    // Listen to message from child window
-    eventer(messageEvent,function(e) {
-        var timeLoaded = parseInt(e.data.timeLoaded);
-        var totalLoadTime = timeLoaded - startTime;
-        console.log('Page Loaded At:  ', e.data.timeLoaded);
-        pushUrlParam('speed', totalLoadTime);
-    },false);
-}
-
-function time(){
-    var d = new Date();
-    return d.getTime();
-}
-
-function pushUrlParam(param, value){
-    var url = window.location.href;
-    var char = (window.location.href.indexOf('?') > 1) ? '&' : '?';
-    var newUrl = url + char + param + '=' + value;
-    window.history.replaceState(null, null, newUrl);
-}
-
-function urlParam(name, url, caseSensitive){
-    if (!url) url = window.location.href;
-    if(typeof url == 'boolean'){
-        caseSensitive = url;
-        url = window.location.href;
+    
+    // Vanilla JS implementation of jQuery $.extend();
+    function extend(){
+        for(var i = 1; i < arguments.length; i++){
+            for(var key in arguments[i]){
+                if(arguments[i].hasOwnProperty(key)) { 
+                    if (typeof arguments[0][key] === 'object' && typeof arguments[i][key] === 'object'){
+                        extend(arguments[0][key], arguments[i][key]);
+                    }      
+                    else{
+                        arguments[0][key] = arguments[i][key];
+                    } 
+                 }
+            }    
+        }
+        return arguments[0];
     }
-    caseSensitive = caseSensitive || false;
-    if(!caseSensitive){
-        url = url.toLowerCase();
-        name = name.toLowerCase();   
-    }
-    name = name.replace(/[\[\]]/g, "\\$&");
-    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-        results = regex.exec(url);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2].replace(/\+/g, " "));
+    
+    return (function(){
+        
+        // Allow options with no callback
+        if(typeof callback !== 'function' && !options){
+            options = callback;
+            callback = undefined;
+        }
+        
+        // Handle options
+        var settings = {
+            before: '',
+            after: '',
+            replace: '',
+            async: false
+        };
+        settings = extend(settings, options);
+        
+        // Create our script tag
+        var s = document.createElement('script');
+        s.setAttribute('src', src);
+        if(settings.async) s.async = true;
+        
+        // Handle callback
+        if(callback && typeof callback == 'function') s.addEventListener('load', callback);
+        
+        // Handle different insertion cases
+        if(settings.replace){
+            replaceScript(settings.replace, s);
+        }
+        else if(settings.before){
+            var target = document.querySelector('[src="' + settings.before + '"]');
+            var parent = target.parentNode;
+            parent.insertBefore(s, target);
+        }
+        else if(settings.after){
+            var target = document.querySelector('[src="' + settings.after + '"]');
+            var parent = target.parentNode;
+            parent.insertBefore(s, target.nextSibling);
+        }
+        else{
+            appendHead(s);
+        }
+    }());
 }
