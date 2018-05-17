@@ -1,0 +1,25 @@
+<link href="https://afeld.github.io/emoji-css/emoji.css" rel="stylesheet">
+
+<i class="em em-alien"></i>
+
+<!-- Child Code -->
+<!-- Add some weight to the page for a fairer test -->
+<img src="https://i.ytimg.com/vi/uSJSPRQdLd8/maxresdefault.jpg">
+<img src="https://i.ytimg.com/vi/uSJSPRQdLd8/maxresdefault.jpg">
+<img src="https://i.ytimg.com/vi/uSJSPRQdLd8/maxresdefault.jpg">
+<img src="https://i.ytimg.com/vi/uSJSPRQdLd8/maxresdefault.jpg">
+<img src="https://i.ytimg.com/vi/uSJSPRQdLd8/maxresdefault.jpg">
+
+<script type="text/javascript">
+    var loadTime = 0;
+    
+    function time(){
+        var d = new Date();
+        return d.getTime();
+    }
+    
+    document.addEventListener("DOMContentLoaded", function() {
+        loadTime = time();
+        parent.postMessage({timeLoaded: loadTime}, "*");
+    });
+</script>
